@@ -1,5 +1,4 @@
 # TinyC Compiler
-> Link : https://pandolia.net/tinyc/index.html
 ## About the whole Procedure 
 ```
 tinyC source code
@@ -290,3 +289,5 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
         * `yytext` : string that was just matched 
         * `yyleng` : length of string mentioned in `yytext`
 
+## Reference
+* tinyc compiler tutorial : https://pandolia.net/tinyc/index.html
