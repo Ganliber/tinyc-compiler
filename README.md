@@ -289,5 +289,67 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
         * `yytext` : string that was just matched 
         * `yyleng` : length of string mentioned in `yytext`
 
+## Syntax Analysis
+### context-free grammar
+* About basic terms
+    * production
+        * nonterminal : can appear on either side (both is ok)
+        * terminal : can only appear on the right-hand side of a `production`
+    * start symbol
+* About context-free grammar
+    * G : A context-free grammar
+        * consists of : T(terminal), N(nonterminal), P(production), S(∈N) (start symbol)
+        * G language : the set of all sentences derived from grammar G
+    
+    * Term Definition : 
+        * terminal set **T** : its elem is called `terminal`
+        * non-terminal set **N** : its elem is called `non-terminal`
+        * symbol : terminal or non-terminal
+        * alphabet **V** : T∪N , its elem is called `symbol`
+        * a string of symbols : 
+            * sentence : a string of symbols with `only` terminal.
+            * empty string : ε
+        * production : A -> u, A is non-terminal and u is a string of symbols.
+        * production set **P** : a set with limited productions.
+        * expand : (A->u) vAw --> vuw
+        * reduce : (A->u) vuw --> vAw
+        * start symbol : a specific elem in **N**
+        * derivate : 推导, u => v
+        * context-free grammar **CFG** : (T, N, P, S)
+        * parse : Given sentence **s** and grammar **G**, determine whether s belongs to G. If so, find out the whole process of deriving s from the **start symbol**.Any string of symbols in the derivation process (including start symbols and final sentences) is called a **working string**(中间句子)
+
+    * Ambiguity : introducing priority can solve this problem.
+    
+    * Concept comparison : the main difference lies in `production`.
+        * context-sensitive grammar : vAw -> vuw
+        * context-free grammar : A -> u 
+
+    * Analysis Methodology
+        * TOP-DOWN
+            * LL(1) : 
+                1. push $(EOF) and start symbol S into stack
+                2. read next token from `token steam` and assign it to **a**, that is, execute instruction `a = yylex()` for one time.
+                3. the top-elem of stack is **X**, so:
+                    * Situation A : X==a && a==$, parsing succeeds, END;
+                    * Situation B : X==a && a!=$, Match, pop **X**, turn to `2.`
+                    * Situation C : X!=a && X belongs to **N** : X -> u1|u2|...|un
+                        * Situation C1 : Only ui matches a, Predict X->ui, pop X, push ui
+                        * Situation C2 : No such ui, END
+                        * Situation C3 : More than one ui exist: not fit for LL(1), need to modify grammar.
+            * **First Set** and **Follow Set**
+                * `first set` : u => v, v is the **first** sentence, then **the first terminal** belongs to `First(u)`; if v is a null, then ε belongs to First(u) as well.
+                    * S -> u1|u2|...|un, First(ui)之间相交, 即First(ui)∩First(uj)=NULL(i≠j)
+                    * S -> aS|bS|c, First(aS) = {a}, First(bS) = {b}, First(c) =  {c}
+                    * 含左递归(left recursive)的语法无法使用LL(1)解析
+                * `follow set` : Follow(A) : terminal behind A(including $ but not ε), if S => uAaw, then a belongs to `Follow(A)`
+                    * When top-elem of stack is X, reading elem is a, a doesn't belong to any First(ui) and X => ε, then a must belong to Follow(A) when it is a legal sentence.
+
+        * BOTTOM-UP
+
+    
+
+
+
+
 ## Reference
 * tinyc compiler tutorial : https://pandolia.net/tinyc/index.html
