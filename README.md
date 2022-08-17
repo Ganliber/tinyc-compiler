@@ -290,6 +290,7 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
         * `yyleng` : length of string mentioned in `yytext`
 
 ## Syntax Analysis
+
 ### context-free grammar
 * About basic terms
     * production
@@ -345,8 +346,68 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
                     * When top-elem of stack is X, reading elem is a, a doesn't belong to any First(ui) and X => ε, then a must belong to Follow(A) when it is a legal sentence.
 
         * BOTTOM-UP
+​​
+### Top-down analysis 
+* Demo : first set and follow set
+    ```
+    Grammar : 
+        S -> AB
+        A -> Ca | ε
+        B -> cB'
+        B'-> aACB' | ε
+        C -> b | ε
+    Calc Result:
+        first(C) = {b, ε}
+        first(B')= {a, ε}
+        first(B) = {c}
+        first(A) = first(C) - ε  + a (*because First(C) contains ε) + ε 
+                 = {b, a, ε}
+        first(S) = (first(A) - ε) + (first(B) - ε)(*because First(A) contains ε) 
+                 = {b, a} + {c} 
+                 = {a, b, c}
 
-    
+        follow(S) = {$}
+        follow(B) = {$}
+        follow(B')= {$}
+        follow(A) = (first(C) - ε) + (first(B') - ε) + (first(B) - ε) + $  
+                  = {b, a, c, $}
+        follow(C) = follow(B') - ε + $ = {a, $}
+    ```
+  
+* first(u) : for a string of symbols u = X1 X2 ... Xn, the calculation steps are as follows:
+  1. set i = 1
+  2. if i == n + 1, add ε to First(u), END
+  3. if Xi is terminal, add Xi to First(u), END
+  4. if Xi is non-terminal, add `First(Xi) - ε` to First(u) --> recursion
+     * if First(Xi) `doesn't contain` ε, END
+     * if First(Xi) `contains` ε, set i = i + 1, turn to `2.`
+​
+* follow(u) : all non-terminals in a grammar, contributing to `follow set`
+  > the key of this algorithm lies in `top-down` sequence.
+  1. add `$` to `follow(S)`, S is start symbol, and $ is EOF symbol.
+  2. for every production like `A -> uBv`, add `First(v)-ε` to `Follow(B)`.
+  3. for every production like `A -> uB`, or `A -> uBv, First(v) contains ε`, add Follow(A) to Follow(B).
+​
+#### LL(1) Action Table and LL(1) Analysis
+​
+* M : Action Table (could be seen as a 2-dim array or a dict)
+* M[A, a]: `Action` that should be taken when stack-top-elem is non-terminal `A` and read-symbol is `a`. 
+* Constructing M : A -> u
+  1. For all terminals in First(u) (excluding ε), set `M[A, ε] = "A -> u"`;
+  2. If First(u) contains ε, for all symbols a in follow(A) (including $), set `M[A, a] = "A -> u"`
+* Parsing steps:
+  1. Push `$` and starting symbol `S` into stack;
+  2. Read the next terminal from inputing stream, assign it to `a`, that is, execute `a = yylex()`
+  3. Assuming that the stack-top-symbol is `X`, there are 3 cases:
+     * X == a && a == $, parsing succeeds! END
+     * X == a && a != $, Match, pop X, turn to 2.
+     * X != a && X is terminal, Two cases as follows:
+       * M[X,a]="X->u", Predict, pop X, push u, turn to 3.
+       * M[X,a] not defined, not syntactic, parsing terminates.
+     * X != a && X is terminal, not syntactic, parsing terminates.
+​
+
+### bottom-up analysis 
 
 
 
