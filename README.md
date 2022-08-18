@@ -365,7 +365,6 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
         first(S) = (first(A) - ε) + (first(B) - ε)(*because First(A) contains ε) 
                  = {b, a} + {c} 
                  = {a, b, c}
-
         follow(S) = {$}
         follow(B) = {$}
         follow(B')= {$}
@@ -375,40 +374,109 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
     ```
   
 * first(u) : for a string of symbols u = X1 X2 ... Xn, the calculation steps are as follows:
-  1. set i = 1
-  2. if i == n + 1, add ε to First(u), END
-  3. if Xi is terminal, add Xi to First(u), END
-  4. if Xi is non-terminal, add `First(Xi) - ε` to First(u) --> recursion
-     * if First(Xi) `doesn't contain` ε, END
-     * if First(Xi) `contains` ε, set i = i + 1, turn to `2.`
+    1. set i = 1
+    2. if i == n + 1, add ε to First(u), END
+    3. if Xi is terminal, add Xi to First(u), END
+    4. if Xi is non-terminal, add `First(Xi) - ε` to First(u) --> recursion
+         * if First(Xi) `doesn't contain` ε, END
+         * if First(Xi) `contains` ε, set i = i + 1, turn to `2.`
 ​
 * follow(u) : all non-terminals in a grammar, contributing to `follow set`
-  > the key of this algorithm lies in `top-down` sequence.
-  1. add `$` to `follow(S)`, S is start symbol, and $ is EOF symbol.
-  2. for every production like `A -> uBv`, add `First(v)-ε` to `Follow(B)`.
-  3. for every production like `A -> uB`, or `A -> uBv, First(v) contains ε`, add Follow(A) to Follow(B).
+    > the key of this algorithm lies in `top-down` sequence.
+    1. add `$` to `follow(S)`, S is start symbol, and $ is EOF symbol.
+    2. for every production like `A -> uBv`, add `First(v)-ε` to `Follow(B)`.
+    3. **for every production like `A -> uB`, or `A -> uBv, First(v) contains ε`, add Follow(A) to Follow(B).**
+    ```python
+    About calculating follow(u):
+    (1) $
+    (2) A->uBv, Follow(B) += First(v) - ε
+        (2.1) if v contains ε,  Follow(B) += Follow(v) 
+    (3) A->uB, Follow(B) += Follow(A)
+
+    A -> uB(v), 只能计算->右侧的(B):
+    若B在末尾, Follow(B)+=Follow(A); 
+    若B不在末尾,看紧跟其后的是否含ε:
+        if so: Follow(B)+=Follow(A)+First(v)-ε;
+        else : Follow(B)+=First(v)-ε; 
+    ```
 ​
 #### LL(1) Action Table and LL(1) Analysis
-​
 * M : Action Table (could be seen as a 2-dim array or a dict)
 * M[A, a]: `Action` that should be taken when stack-top-elem is non-terminal `A` and read-symbol is `a`. 
 * Constructing M : A -> u
-  1. For all terminals in First(u) (excluding ε), set `M[A, ε] = "A -> u"`;
-  2. If First(u) contains ε, for all symbols a in follow(A) (including $), set `M[A, a] = "A -> u"`
-* Parsing steps:
-  1. Push `$` and starting symbol `S` into stack;
-  2. Read the next terminal from inputing stream, assign it to `a`, that is, execute `a = yylex()`
-  3. Assuming that the stack-top-symbol is `X`, there are 3 cases:
-     * X == a && a == $, parsing succeeds! END
-     * X == a && a != $, Match, pop X, turn to 2.
-     * X != a && X is terminal, Two cases as follows:
-       * M[X,a]="X->u", Predict, pop X, push u, turn to 3.
-       * M[X,a] not defined, not syntactic, parsing terminates.
-     * X != a && X is terminal, not syntactic, parsing terminates.
-​
+    > if you encounter a conflict during the process of building the action table M, it means that the LL(1) algorithm is not applicable at this time.
+    1. For all terminals in First(u) (excluding ε), set `M[A, ε] = "A -> u"`;
+    2. If First(u) contains ε, for all symbols a in follow(A) (including $), set `M[A, a] = "A -> u"`
 
+* Parsing steps:
+    1. Push `$` and starting symbol `S` into stack;
+    2. Read the next terminal from inputing stream, assign it to `a`, that is, execute `a = yylex()`
+    3. Assuming that the stack-top-symbol is `X`, there are 3 cases:
+        * X == a && a == $, parsing succeeds! END
+        * X == a && a != $, Match, pop X, turn to 2.
+        * X != a && X is terminal, Two cases as follows:
+            * M[X,a]="X->u", Predict, pop X, push u, turn to 3.
+            * M[X,a] not defined, not syntactic, parsing terminates.
+        * X != a && X is terminal, not syntactic, parsing terminates.
+​
 ### bottom-up analysis 
 
+#### LR Algorithm
+* Demo for LR methodology
+    ```C
+    Grammar : 
+        S -> E
+        E -> T
+        E -> E + T
+        T -> id
+        T -> (E)
+    Sentence to be parsed :
+        (id + id)
+    Parsing by hand : 
+    1 (id+id) "T->id"
+    2 (T +id) "E->id"
+    3 (T + E) "E->E+T"
+    4 (E)     "S->E"
+    5 (S)     ACCEPT  
+    ```
+* some terms
+    * viable string
+    * prefix, sufix
+    * viable prefix
+    * reduceable
+
+* Construct LR(0) Analyzer
+    * some demo for terms : 
+    * `Configuration (C)` : the degree of resolution of a production, represented by a production plus a positional black dot
+        * `"A->ε·"`( **recommended** ) ≈ `"A->·ε"`
+        * `start configuration of a production`
+            * For example, `A->·abc`
+        * `complete configuration of a production (reduceable configuration)`
+            * For example, `A->abc·`
+        * `successor configuration`
+            * For example, `NEXT(C,Y)==C', C=[A->X·YZ], C'=[A->XY·Z], C--(Y)->C'`
+        * `extended configuration`
+            * For example, `A->v·Yw, Y is a non-terminal, Y->u, we call "Y->·u" is the extended configuration of "A->v·Yw"`
+            * Pay attention, `extended configuration` is a **one-way extension**
+        * `configurating set`
+        * `closure of a configurating set` : 集合I闭包集合,记作CLOSURE(I)
+            * Add all extended configurations in set `I` to set `CLOSURE(I)`.
+    * `State (I)` : configuration set that has been closed.(进行过闭合操作的C)
+        * If C belongs to I, then CLOSURE(C) belongs to I.
+        * `start state of a CFG(Context-Free Grammar)`
+            ```C
+            Start symbol : S
+            All productions : S -> u1|u2|...|un
+                /* S is not on the right-hand side of any production */
+            I0 : start state of S
+                I0 = CLOSURE({[S->·u1], [S->·u2], ..., [S->·un]})
+            Demo :
+                S->A
+                A->aBd
+                B->bc
+                
+                I0 = CLOSURE({[S->·A]}) = {[S->·A], [A->·aBd]}
+            ```
 
 
 
