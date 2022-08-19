@@ -474,10 +474,60 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
                 S->A
                 A->aBd
                 B->bc
-                
-                I0 = CLOSURE({[S->·A]}) = {[S->·A], [A->·aBd]}
+                => I0 = CLOSURE({[S->·A]}) = {[S->·A], [A->·aBd]}
+            ```
+        * succesor state : 
+            ```C
+            Procedure :
+                state I ---X--> state I' ; I' is NEXT(I,X), that is succesor state
+                NEXT(I,X)=CLOSURE({NEXT(C, X)|C∈I})
+            State Transition Diagram :
+                Grammar :
+                    S->A
+                    A->aBd
+                    B->bc
+                Transition :
+                I0=S->.A|A->.aBd
+                + NEXT(I0,A) : I1=S->A.             --> ending 1
+                + NEXT(I0,a) : I2=A->a.Bd|B->.bc
+                ++  NEXT(I2,B) : I3=A->aB.d
+                +++     NEXT(I3,d) : I5=aBd.        --> ending 2
+                ++  NEXT(I2,b) : I4=B->b.c
+                +++     NEXT(I4,c) : I6=bc.         --> ending 3
+            ```
+        * reduceable state :
+            > if a state only has one configuration, such as `I1, I5, I6` mentioned above, we call it `reduceable state`.
+            * Action M : M[I,X] is the action to be taken when state is I, next symbol is X.
+            ```C
+            * non-terminal 
+                * shift : ->
+                * reduce : <-
+            * terminal 
+                * goto : <-
             ```
 
+
+
+* Construct LR(1) Analyzer
+    * LR(0): needs in the grammar `multiple reduceable configuration` are not allowed in the grammar.
+        * `reduce/reduce` conflict : one state has `more than one` reduceable configuration
+        * `shift/reduce` conflict : one state has `both` reduceable configuration and non-reduceable configuration.
+    ```C
+    One state has multiple reduceable configurations :
+    (1) reduce/reduce conflict
+        I = { "A->u." ; "B->w."}
+    if Follow(A) ∩ Follow(B) == NULL :
+        for an input 'a': 
+        1. 'a' belongs to Follow(A), reduce "A->u"
+        2. 'a' belongs to Follow(B), reduce "B->w"
+    
+    (2) shift/reduce conflict
+        I = { "A->u." ; "B->v.w"}
+    if Follow(A) ∩ First(w) == NULL :
+        for an input 'a':
+        1. 'a' belongs to Follow(A), reduce "A->u"
+        2. 'a' belongs to First(w), shift "B->v.w"
+    ```
 
 
 ## Reference
