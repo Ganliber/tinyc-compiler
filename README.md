@@ -476,10 +476,10 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
                 B->bc
                 => I0 = CLOSURE({[S->·A]}) = {[S->·A], [A->·aBd]}
             ```
-        * succesor state : 
+        * successor state : 
             ```C
             Procedure :
-                state I ---X--> state I' ; I' is NEXT(I,X), that is succesor state
+                state I ---X--> state I' ; I' is NEXT(I,X), that is successor state
                 NEXT(I,X)=CLOSURE({NEXT(C, X)|C∈I})
             State Transition Diagram :
                 Grammar :
@@ -512,23 +512,154 @@ T_STRINGCONSTANT        "This is a string" / "hello" / ...
     * LR(0): needs in the grammar `multiple reduceable configuration` are not allowed in the grammar.
         * `reduce/reduce` conflict : one state has `more than one` reduceable configuration
         * `shift/reduce` conflict : one state has `both` reduceable configuration and non-reduceable configuration.
-    ```C
-    One state has multiple reduceable configurations :
-    (1) reduce/reduce conflict
-        I = { "A->u." ; "B->w."}
-    if Follow(A) ∩ Follow(B) == NULL :
-        for an input 'a': 
-        1. 'a' belongs to Follow(A), reduce "A->u"
-        2. 'a' belongs to Follow(B), reduce "B->w"
-    
-    (2) shift/reduce conflict
-        I = { "A->u." ; "B->v.w"}
-    if Follow(A) ∩ First(w) == NULL :
-        for an input 'a':
-        1. 'a' belongs to Follow(A), reduce "A->u"
-        2. 'a' belongs to First(w), shift "B->v.w"
-    ```
+        ```C
+        One state has multiple reduceable configurations :
+        (1) reduce/reduce conflict
+            I = { "A->u." ; "B->w."}
+        if Follow(A) ∩ Follow(B) == NULL :
+            for an input 'a': 
+            1. 'a' belongs to Follow(A), reduce "A->u"
+            2. 'a' belongs to Follow(B), reduce "B->w"
+        
+        (2) shift/reduce conflict
+            I = { "A->u." ; "B->v.w"}
+        if Follow(A) ∩ First(w) == NULL :
+            for an input 'a':
+            1. 'a' belongs to Follow(A), reduce "A->u"
+            2. 'a' belongs to First(w), shift "B->v.w"
+        ```
+    * LR(1) configuration:
+        ```C
+        A -> X1 ... Xi · Xi+1 ... Xn, a
+        + Only when the input terminal is 'a' after Xn the **reduce** action is executed.
+        + The number '1' in 'LR(1)' means **one** lookahead is required.
+            * Current symbols on the stack : X1...Xi
+            * Expected symbols : Xi+1 ... Xn
+            * Lookahead : a
+        ```
+    * LR(1) successor configuration
+        ```C
+        if 
+            C = [ A -> X.YZ, a]
+        then 
+            C`= [ A -> XY.Z, a]
+        + C` is the successor configuration of C, denoted as NEXT(C,Y).
+        + C ---Y--> C`.
+        ```
+    * LR(1) extended configuration
+        ```C
+        if 
+            C = [A -> u.Bv, a] && B->w, b∈First(va)
+        then 
+            C`= [B -> .w, b]
+        + C` is the extended configuration of C.
+        + Add the influence of context. 
+        ```
+    * LR(1) closure of a configuration set :
+        ```C
+        for every configuration like '[A->u.Bv, a]' in I, that is, '.' + 'non-terminal':
+            for every production in B like '[B->w]' and every symbol 'b' in First(va):
+                Add configuration '[B -> .w, b]' to I'.
+        I' = CLOSURE(I)
+        ```
+    * LR(1) start state of a CFG :
+        ```C
+        S -> u1 | u2 | ... | un
+        I0 = CLOSURE({[S->.u1,$], [S->.u2,$], ... , [S->.un,$]})
+        ```
+    * LR(1) successor state :
+        ```C
+        NEXT(I, X) = CLOSURE( { NEXT(C, X) | C ∈ I} )
+            + NEXT(I,X) can be ε.
+        ```
+    * LR(1) problems :
+        * reduce/reduce conflict (`unusual`) :
+            ```C
+            Ii:
+                [A->u., a] and [B->v., a]
+            Problem:
+                How to determine M[I, a] ?
+                Both are `reduce` action.
+            ```
+        * reduce/shift conflict (can be solved by setting `priority`) :
+            ```C
+            Ii:
+                [A->u.aw, c] and [B->v., a]
+            Problem:
+                How to determine M[I, a] ?
+                [A->ua.w,c] --> shift
+                [B->v.,a] --> reduce
+            ```
+    * Priority : 
+        ```C
+        Ii:
+            [A->u.aw, c] --> shift
+            [B->v., a]   --> reduce
+        conditions:
+            + The priority of 'a' is defined, and there is at least one symbol with a `defined priority` in the string 'v'.
+            + The rightmost symbol in 'v' with a defined priority ( closest to 'a' in 'v' ) is denoted as 'b'.
+        principles:
+            1. Priority(a) < Priority(b) : M[I,a] = reduce B->v;
+            2. Priority(a) > Priority(b) : M[I,a] = shift NEXT(I,a);
+            3. P(a)==P(b) : 
+                3.1 Both a and b are left-associative : M[I,a] = shift NEXT(I,a);
+                3.2 Both a and b are right-associative : reduce B->v;
+        ```
 
+#### Optimized LR(1) Analysis : `LALR(1)`
+* `LALR(1)` method `merges similar states` compared to `LR(1)` method.
+    * save the `space` of the action table.
+    * save the `time` by improving parsing speed.
+
+### Syntax analysis tool : bison
+* Bison grammar
+    > Overview
+    ```C
+    %{
+    Declarations
+    %}
+    Definitions
+    %%
+    Productions
+    %%
+    User subroutines
+    ```
+    > About `Definition`
+    ```C
+    You can define priority of different symbols in section 'Definition'.
+    %left '+' '-'
+    %left '*' '/' 
+      |
+    左结合,优先级下>上
+    ```
+    > About `Production`
+    ```C
+    Format :
+        S -> S E \n | ε
+        E -> E + E | E - E | E * E | E / E | T_NUM | (E)
+    Expansion :
+        ->                         --- :
+        Ending of one production   --- ;
+        Terminal                   --- 'terminal'
+        Non-terminal               --- non-terminal
+        other types of token       --- defined in section 'Definition'
+    ```
+* Intermediate Files
+    * y.tab.c : LALR(1) Action Table
+    * y.output : Virtualized Action Table and according elements of grammar. ( state transition diagram )
+
+* Analysis :
+    * `token stream` --> Grammatical 
+        * --> no error during parsing
+        * --> yyparse() return `0`
+    * `token stream` --> Not grammatical
+        * --> error during parsing
+        * --> yyparse() `terminate` at the first error
+        * --> call `yyerror()`, `yyerror()` return `1`
+
+* About `yyparse()` :
+    * reduce : `$1`, $2, $3, ... , --> refer to configurations in `Configuration Stack`
+    * `$$` : `terminal` on the `left-hand` side of the production
 
 ## Reference
 * tinyc compiler tutorial : https://pandolia.net/tinyc/index.html
