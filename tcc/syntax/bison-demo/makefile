@@ -3,7 +3,7 @@ OBJ = lex.yy.o y.tab.o
 calc: $(OBJ)
 	gcc -o calc $(OBJ)
 
-lex.y.o: calc.l y.tab.c
+lex.yy.c: calc.l y.tab.c
 	flex $<
 
 y.tab.c: calc.y

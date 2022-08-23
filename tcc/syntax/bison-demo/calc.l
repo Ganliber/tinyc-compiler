@@ -4,7 +4,7 @@
 
 %%
 [0-9]+          { yylval = atoi(yytext); return T_NUM; }
-[+\-+*()\n]     { return yytext[0]; } //注意减号前要加上转义字符
+[+\-+*()\n]     { return yytext[0]; }
 .               { return 0; /* End when everything else */ }
 %%
 
