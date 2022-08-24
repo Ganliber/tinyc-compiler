@@ -1,5 +1,6 @@
 %{
 #define YYSTYPE char *
+#define _DUPTEXT {yylval = strdup(yytext);}
 #include "y.tab.h"
 int cur_line = 1;
 void yyerror(const char * msg);
