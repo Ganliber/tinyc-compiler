@@ -34,7 +34,7 @@ SINGLE_COMMENT2 ("//"[^\n]*)
 "else"          { return T_Else; }
 "while"         { return T_While; }
 "break"         { return T_Break; }
-"readint"       { return T_Readint; } 
+"readint"       { return T_ReadInt; } 
 "continue"      { return T_Continue; }
 "<="            { return T_Le; }
 ">="            { return T_Ge; }
