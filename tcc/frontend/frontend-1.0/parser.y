@@ -180,11 +180,11 @@ EndWhile:
 ;
 
 BreakStmt:
-    T_Break                         { printf("\tjmp _endWhile_%d\n", _w);}
+    T_Break ';'                     { printf("\tjmp _endWhile_%d\n", _w);}
 ;
 
 ContinueStmt:
-    T_Continue                     { printf("\tjmp _begWhile_%d\n", _w); }
+    T_Continue ';'                  { printf("\tjmp _begWhile_%d\n", _w); }
 ;
 
 Expr:

@@ -24,3 +24,55 @@ push 5
 	or
 	jz _elIf_1
 	jmp _begWhile_0
+	jmp _endIf_1
+_elIf_1:
+_endIf_1:
+
+_begIf_2:
+push i
+push 8
+	cmpeq
+	jz _elIf_2
+	jmp _endWhile_0
+	jmp _endIf_2
+_elIf_2:
+_endIf_2:
+
+push i
+push i
+$factor
+print "%d! = %d"
+
+	jmp _begWhile_0
+_endWhile_0:
+
+push 0
+ret ~
+
+ENDFUNC
+
+FUNC @factor:
+arg n
+
+_begIf_3:
+push n
+push 2
+	cmplt
+	jz _elIf_3
+push 1
+ret ~
+
+	jmp _endIf_3
+_elIf_3:
+_endIf_3:
+
+push n
+push n
+push 1
+	sub
+$factor
+	mul
+ret ~
+
+ENDFUNC
+

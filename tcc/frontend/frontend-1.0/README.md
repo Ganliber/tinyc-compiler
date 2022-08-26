@@ -5,3 +5,4 @@
 4. make simulate
 5. python pysim.py test.asm -da
 	Runnning through this command will enter single-step debugging.	
+6. bash ./test_samples.sh
